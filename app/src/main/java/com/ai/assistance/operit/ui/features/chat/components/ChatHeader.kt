@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.*
@@ -37,6 +38,7 @@ fun ChatHeader(
         onToggleChatHistorySelector: () -> Unit,
         modifier: Modifier = Modifier,
         onLaunchFloatingWindow: () -> Unit = {},
+        onLaunchReaderWindow: () -> Unit = {},
         isFloatingMode: Boolean = false,
         historyIconColor: Int? = null,
         pipIconColor: Int? = null,
@@ -145,6 +147,29 @@ fun ChatHeader(
                                                         else
                                                                 MaterialTheme.colorScheme.onSurface
                                                                         .copy(alpha = 0.7f),
+                                        modifier = Modifier.size(20.dp)
+                                )
+                        }
+                }
+
+                Box(
+                        modifier =
+                                Modifier.size(32.dp)
+                                        .background(
+                                                color = Color.Transparent,
+                                                shape = CircleShape
+                                        )
+                ) {
+                        IconButton(
+                                onClick = onLaunchReaderWindow,
+                                modifier = Modifier.matchParentSize()
+                        ) {
+                                Icon(
+                                        imageVector = Icons.Default.MenuBook,
+                                        contentDescription = "共读小窗",
+                                        tint =
+                                                MaterialTheme.colorScheme.onSurface
+                                                        .copy(alpha = 0.7f),
                                         modifier = Modifier.size(20.dp)
                                 )
                         }
