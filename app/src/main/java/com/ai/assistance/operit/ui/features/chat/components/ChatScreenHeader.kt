@@ -69,7 +69,18 @@ fun ChatScreenHeader(
 
     LaunchedEffect(actualViewModel, context) {
         actualViewModel.moveTaskToBackEvents.collect {
-            (context as? android.app.Activity)?.moveTaskToBack(true)
+            // 小米(HyperOS)把 moveTaskToBack 当成「上滑清理」，会直接 force-stop 整个进程，
+            // 浮窗跟着一起消失。改成回桌面的 Intent：任务留在后台，进程和浮窗都保住。
+            try {
+                context.startActivity(
+                    android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
+                        addCategory(android.content.Intent.CATEGORY_HOME)
+                        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                )
+            } catch (e: Exception) {
+                (context as? android.app.Activity)?.moveTaskToBack(true)
+            }
         }
     }
 
