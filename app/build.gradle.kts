@@ -453,6 +453,8 @@ android {
             applicationIdSuffix = ".clone"
             if (releaseSigningConfig != null) {
                 signingConfig = releaseSigningConfig
+            } else if (signingConfigs.findByName("fixedDebug") != null) {
+                signingConfig = signingConfigs.findByName("fixedDebug")
             }
             matchingFallbacks += listOf("debug")
             resValue("string", "app_name", "小汪")
