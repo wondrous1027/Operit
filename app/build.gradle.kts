@@ -385,6 +385,17 @@ android {
                 keyPassword = releaseKeyPassword
             }
         }
+
+        // 仓库里带了一把固定的调试签名，保证每次编出来的包签名一致、能直接覆盖安装
+        val fixedDebugKeystore = rootProject.file("ci/debug.keystore")
+        if (fixedDebugKeystore.exists()) {
+            create("fixedDebug") {
+                storeFile = fixedDebugKeystore
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
     }
 
     externalNativeBuild {
@@ -434,7 +445,7 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("fixedDebug") ?: signingConfigs.getByName("debug")
             resValue("string", "app_name", "Operit Debug")
         }
         create("clone") {
