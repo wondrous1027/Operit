@@ -793,7 +793,11 @@ class FloatingChatService : Service(), FloatingWindowCallback {
     }
 
     fun switchToMode(mode: FloatingMode) {
-        windowState.currentMode.value = mode
+        if (::windowManager.isInitialized) {
+            windowManager.requestModeChange(mode)
+        } else {
+            windowState.currentMode.value = mode
+        }
         AppLogger.d(TAG, "Switching to mode: $mode")
     }
 
