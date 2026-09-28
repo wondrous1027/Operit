@@ -202,11 +202,7 @@ jobs:
 
       - name: Install fixed debug keystore
         shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$HOME/.android"
-          cp ci/debug.keystore "$HOME/.android/debug.keystore"
-          ls -l "$HOME/.android/debug.keystore"
+        run: mkdir -p "$HOME/.android" && cp ci/debug.keystore "$HOME/.android/debug.keystore" && ls -l "$HOME/.android/debug.keystore"
 
       - name: Run Gradle build
         env:
