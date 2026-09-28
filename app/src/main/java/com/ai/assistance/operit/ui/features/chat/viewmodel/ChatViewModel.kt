@@ -1702,6 +1702,7 @@ class ChatViewModel(private val context: Context) : ViewModel() {
                         moveTaskToBackOnReady = moveTaskToBackOnReady
                     )
                 }
+                FloatingMode.READER -> launchReaderFloatingMode()
                 FloatingMode.BALL,
                 FloatingMode.VOICE_BALL,
                 FloatingMode.RESULT_DISPLAY -> {
@@ -2364,6 +2365,20 @@ class ChatViewModel(private val context: Context) : ViewModel() {
         floatingWindowDelegate.launchInMode(mode, colorScheme, typography, moveTaskToBackOnReady)
     }
     
+    /** 打开共读小窗（原生浮窗，用来看小说并选段发给小汪） */
+    fun launchReaderFloatingMode() {
+        if (!Settings.canDrawOverlays(context)) {
+            openOverlayPermissionSettings()
+            return
+        }
+        launchFloatingModeIn(
+                mode = FloatingMode.READER,
+                colorScheme = null,
+                typography = null,
+                moveTaskToBackOnReady = true
+        )
+    }
+
     /**
      * 从Widget启动悬浮窗到指定模式（使用默认主题）
      */
