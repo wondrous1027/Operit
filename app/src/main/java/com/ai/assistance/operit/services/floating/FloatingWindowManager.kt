@@ -500,6 +500,12 @@ class FloatingWindowManager(
         RainbowBorderOverlay()
     }
 
+    /** 状态栏高度，共读小窗靠这个往下让一点 */
+    private fun statusBarHeightPx(): Int {
+        val resId = context.resources.getIdentifier("status_bar_height", "dimen", "android")
+        return if (resId > 0) context.resources.getDimensionPixelSize(resId) else 0
+    }
+
     private fun createLayoutParams(): WindowManager.LayoutParams {
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
@@ -594,7 +600,8 @@ class FloatingWindowManager(
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
             state.x = 0
-            state.y = 0
+            // 躲开状态栏，别贴到屏幕最顶上把那排字盖住
+            state.y = statusBarHeightPx()
         }
 
         params.softInputMode = resolveSoftInputModeForMode(state.currentMode.value)
@@ -846,7 +853,7 @@ class FloatingWindowManager(
                 val readerHeight =
                     (state.windowHeight.value.value * density * state.windowScale.value).toInt()
                 state.windowScale.value = state.lastWindowScale
-                TargetParams(screenWidth, readerHeight, 0, 0, flags)
+                TargetParams(screenWidth, readerHeight, 0, statusBarHeightPx(), flags)
             }
             FloatingMode.WINDOW -> {
                 val flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
