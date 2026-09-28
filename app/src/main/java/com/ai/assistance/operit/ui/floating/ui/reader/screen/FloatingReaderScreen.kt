@@ -496,7 +496,7 @@ fun FloatingReaderScreen(floatContext: FloatContext) {
                     }
                 }
 
-                // 底部这条用来拉高度：往下拖变矮，往上拖变高
+                // 底部这条用来拉高度：往下拖变高，往上拖变矮
                 Box(
                     modifier =
                         Modifier.fillMaxWidth()
@@ -508,7 +508,7 @@ fun FloatingReaderScreen(floatContext: FloatContext) {
                                     val maxHeight =
                                         floatContext.screenHeight.value * MAX_READER_HEIGHT_RATIO
                                     val newHeight =
-                                        (floatContext.windowHeightState - deltaDp)
+                                        (floatContext.windowHeightState + deltaDp)
                                             .value
                                             .coerceIn(MIN_READER_HEIGHT_DP, maxHeight)
                                     floatContext.onResize(
