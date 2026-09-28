@@ -47,11 +47,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ai.assistance.operit.api.chat.ChatRuntimeHolder
+import com.ai.assistance.operit.api.chat.ChatRuntimeSlot
 import com.ai.assistance.operit.data.model.ChatTurnOptions
 import com.ai.assistance.operit.data.model.PromptFunctionType
 import com.ai.assistance.operit.ui.floating.FloatContext
@@ -76,6 +79,8 @@ private val readerClient: OkHttpClient by lazy {
 }
 
 private const val MIN_LINE_LENGTH = 12
+private const val MIN_READER_HEIGHT_DP = 150f
+private const val MAX_READER_HEIGHT_RATIO = 0.85f
 
 private val NAV_WORDS =
     listOf(
@@ -158,13 +163,13 @@ private fun decodeEntities(input: String): String {
             .replace("&rdquo;", "\u201d")
             .replace("&hellip;", "\u2026")
             .replace("&mdash;", "\u2014")
-            .replace("&quot;", "\"")
-            .replace("&#39;", "'")
-            .replace("&apos;", "'")
+            .replace("\u0026quot;", "\"")
+            .replace("\u0026#39;", "'")
+            .replace("\u0026apos;", "'")
             .replace("&lt;", "<")
             .replace("&gt;", ">")
             .replace("&amp;", "&")
-    val numeric = Regex("&#(\\d{1,6});")
+    val numeric = Regex("\u0026#(\\d{1,6});")
     text =
         numeric.replace(text) { match ->
             val code = match.groupValues[1].toIntOrNull()
@@ -240,6 +245,7 @@ private fun fetchChapter(url: String): Result<ChapterContent> {
 fun FloatingReaderScreen(floatContext: FloatContext) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val context = LocalContext.current
     val listState = rememberLazyListState()
 
     var urlText by remember { mutableStateOf("") }
@@ -303,9 +309,19 @@ fun FloatingReaderScreen(floatContext: FloatContext) {
             statusText = "聊天没连上，发不出去"
             return
         }
+        val activeChatId =
+            try {
+                ChatRuntimeHolder.getInstance(context)
+                    .getCore(ChatRuntimeSlot.MAIN)
+                    .currentChatId
+                    .value
+            } catch (_: Exception) {
+                null
+            }
         try {
             core.sendUserMessage(
                 promptFunctionType = PromptFunctionType.CHAT,
+                chatIdOverride = activeChatId,
                 messageTextOverride = text,
                 turnOptions = ChatTurnOptions(hideUserMessage = true)
             )
@@ -318,17 +334,14 @@ fun FloatingReaderScreen(floatContext: FloatContext) {
     Box(modifier = Modifier.fillMaxSize()) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
             shadowElevation = 0.dp
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 Row(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .height(40.dp)
-                            .padding(horizontal = 6.dp),
+                    modifier = Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -338,36 +351,20 @@ fun FloatingReaderScreen(floatContext: FloatContext) {
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
-                    Box(
-                        modifier =
-                            Modifier.weight(1f)
-                                .fillMaxSize()
-                                .pointerInput(Unit) {
-                                    detectDragGestures { change, dragAmount ->
-                                        change.consume()
-                                        floatContext.onMove(
-                                            dragAmount.x,
-                                            dragAmount.y,
-                                            floatContext.windowScale
-                                        )
-                                    }
-                                },
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        Text(
-                            text = chapterTitle.ifBlank { "共读小窗" },
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                    Text(
+                        text = chapterTitle.ifBlank { "共读小窗" },
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
                     IconButton(
                         onClick = { floatContext.onModeChange(FloatingMode.BALL) },
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = "收起",
+                            contentDescription = "收成小球",
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -393,10 +390,10 @@ fun FloatingReaderScreen(floatContext: FloatContext) {
                     OutlinedTextField(
                         value = urlText,
                         onValueChange = { urlText = it },
-                        modifier =
-                            Modifier.weight(1f)
-                                .onFocusChanged { urlFocused = it.isFocused },
-                        placeholder = { Text("贴小说网址", style = MaterialTheme.typography.bodySmall) },
+                        modifier = Modifier.weight(1f).onFocusChanged { urlFocused = it.isFocused },
+                        placeholder = {
+                            Text("贴小说网址", style = MaterialTheme.typography.bodySmall)
+                        },
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodySmall,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
@@ -404,6 +401,18 @@ fun FloatingReaderScreen(floatContext: FloatContext) {
                     )
                     TextButton(onClick = { loadChapter(urlText) }, enabled = !isLoading) {
                         Text(if (isLoading) "…" else "抓正文")
+                    }
+                    TextButton(
+                        onClick = {
+                            val target = nextUrl
+                            if (target != null) {
+                                urlText = target
+                                loadChapter(target)
+                            }
+                        },
+                        enabled = nextUrl != null && !isLoading
+                    ) {
+                        Text("下一章")
                     }
                 }
 
@@ -472,18 +481,6 @@ fun FloatingReaderScreen(floatContext: FloatContext) {
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(
-                        onClick = {
-                            val target = nextUrl
-                            if (target != null) {
-                                urlText = target
-                                loadChapter(target)
-                            }
-                        },
-                        enabled = nextUrl != null && !isLoading
-                    ) {
-                        Text("下一章")
-                    }
                     Button(
                         onClick = { sendSelected() },
                         enabled = selectedIndex >= 0,
@@ -498,35 +495,41 @@ fun FloatingReaderScreen(floatContext: FloatContext) {
                         Text("发这段", style = MaterialTheme.typography.labelMedium)
                     }
                 }
-            }
-        }
 
-        Box(
-            modifier =
-                Modifier.align(Alignment.BottomEnd)
-                    .size(24.dp)
-                    .pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            val newWidth =
-                                floatContext.windowWidthState +
-                                    with(density) { dragAmount.x.toDp() }
-                            val newHeight =
-                                floatContext.windowHeightState +
-                                    with(density) { dragAmount.y.toDp() }
-                            floatContext.onResize(newWidth, newHeight)
-                        }
-                    },
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier =
-                    Modifier.size(10.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(3.dp)
-                        )
-            )
+                // 底部这条用来拉高度：往下拖变矮，往上拖变高
+                Box(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .height(18.dp)
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    val deltaDp = with(density) { dragAmount.y.toDp() }
+                                    val maxHeight =
+                                        floatContext.screenHeight.value * MAX_READER_HEIGHT_RATIO
+                                    val newHeight =
+                                        (floatContext.windowHeightState - deltaDp)
+                                            .value
+                                            .coerceIn(MIN_READER_HEIGHT_DP, maxHeight)
+                                    floatContext.onResize(
+                                        floatContext.windowWidthState,
+                                        newHeight.dp
+                                    )
+                                }
+                            },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.width(44.dp)
+                                .height(4.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+                                    shape = RoundedCornerShape(2.dp)
+                                )
+                    )
+                }
+            }
         }
     }
 }
