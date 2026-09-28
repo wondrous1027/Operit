@@ -260,7 +260,7 @@ class FloatingWindowManager(
         val view = focusDismissView ?: return
         val canShow =
             enabled &&
-                state.currentMode.value == FloatingMode.WINDOW &&
+                (state.currentMode.value == FloatingMode.WINDOW || state.currentMode.value == FloatingMode.READER) &&
                 !windowPersistentHidden &&
                 windowDisplayEnabled
         view.visibility = if (canShow) View.VISIBLE else View.GONE
@@ -533,7 +533,7 @@ class FloatingWindowManager(
                         )
                 state.y = state.y.coerceIn(safeMargin, screenHeight - minVisible - safeMargin)
             }
-            FloatingMode.WINDOW -> {
+            FloatingMode.WINDOW, FloatingMode.READER -> {
                 val scale = state.windowScale.value
                 val windowWidthDp = state.windowWidth.value
                 val windowHeightDp = state.windowHeight.value
@@ -716,7 +716,7 @@ class FloatingWindowManager(
                 state.lastBallPositionX = currentParams.x
                 state.lastBallPositionY = currentParams.y
             }
-            FloatingMode.WINDOW -> {
+            FloatingMode.WINDOW, FloatingMode.READER -> {
                 state.lastWindowPositionX = currentParams.x
                 state.lastWindowPositionY = currentParams.y
                 state.lastWindowScale = state.windowScale.value
@@ -733,7 +733,7 @@ class FloatingWindowManager(
         }
 
         state.currentMode.value = newMode
-        if (newMode != FloatingMode.WINDOW) {
+        if (newMode != FloatingMode.WINDOW && newMode != FloatingMode.READER) {
             pendingImeFocusRunnable?.let { mainHandler.removeCallbacks(it) }
             pendingImeFocusRunnable = null
             focusDismissOverlayRequested = false
@@ -805,7 +805,7 @@ class FloatingWindowManager(
                     "Ball target after coerce: finalPos=($finalX,$finalY)")
                 TargetParams(ballSizeInPx, ballSizeInPx, finalX, finalY, flags)
                 }
-                FloatingMode.WINDOW -> {
+                FloatingMode.WINDOW, FloatingMode.READER -> {
                 val flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
                 val width = (state.windowWidth.value.value * density * state.lastWindowScale).toInt()
@@ -1055,7 +1055,7 @@ class FloatingWindowManager(
                 params.flags = params.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
 
                 // Keep background tappable while IME is active.
-                if (state.currentMode.value == FloatingMode.WINDOW) {
+                if (state.currentMode.value == FloatingMode.WINDOW || state.currentMode.value == FloatingMode.READER) {
                     params.flags =
                             params.flags or
                                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
