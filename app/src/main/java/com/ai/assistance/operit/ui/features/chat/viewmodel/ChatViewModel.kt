@@ -2375,7 +2375,8 @@ class ChatViewModel(private val context: Context) : ViewModel() {
                 mode = FloatingMode.READER,
                 colorScheme = null,
                 typography = null,
-                moveTaskToBackOnReady = true
+                // 共读小窗就在小汪本体里看：不退后台，不关掉 App。
+                moveTaskToBackOnReady = false
         )
     }
 
