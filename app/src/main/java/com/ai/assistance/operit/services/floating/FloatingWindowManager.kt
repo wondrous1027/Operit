@@ -308,6 +308,19 @@ class FloatingWindowManager(
         )
     }
 
+    /** 让服务也能走完整的模式切换（会重算窗口大小和位置） */
+    fun requestModeChange(mode: FloatingMode) {
+        if (composeView == null) {
+            state.currentMode.value = mode
+            return
+        }
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            switchMode(mode)
+        } else {
+            mainHandler.post { switchMode(mode) }
+        }
+    }
+
     fun setFloatingWindowVisible(visible: Boolean) {
         windowDisplayEnabled = visible
         refreshWindowAndIndicatorVisibility()
@@ -571,6 +584,19 @@ class FloatingWindowManager(
             }
         }
 
+        // 共读小窗：整屏宽、贴在最上面，高度可调
+        if (state.currentMode.value == FloatingMode.READER) {
+            params.width = WindowManager.LayoutParams.MATCH_PARENT
+            params.height =
+                (state.windowHeight.value.value * density * state.windowScale.value).toInt()
+            params.flags =
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+            state.x = 0
+            state.y = 0
+        }
+
         params.softInputMode = resolveSoftInputModeForMode(state.currentMode.value)
         params.x = state.x
         params.y = state.y
@@ -647,7 +673,11 @@ class FloatingWindowManager(
             val scale = state.windowScale.value
             val widthDp = state.windowWidth.value
             val heightDp = state.windowHeight.value
-            params.width = (widthDp.value * density * scale).toInt()
+            if (state.currentMode.value == FloatingMode.READER) {
+                params.width = WindowManager.LayoutParams.MATCH_PARENT
+            } else {
+                params.width = (widthDp.value * density * scale).toInt()
+            }
             params.height = (heightDp.value * density * scale).toInt()
         }
     }
@@ -716,7 +746,10 @@ class FloatingWindowManager(
                 state.lastBallPositionX = currentParams.x
                 state.lastBallPositionY = currentParams.y
             }
-            FloatingMode.WINDOW, FloatingMode.READER -> {
+            FloatingMode.READER -> {
+                // 离开共读小窗时不动聊天窗的位置
+            }
+            FloatingMode.WINDOW -> {
                 state.lastWindowPositionX = currentParams.x
                 state.lastWindowPositionY = currentParams.y
                 state.lastWindowScale = state.windowScale.value
@@ -805,7 +838,17 @@ class FloatingWindowManager(
                     "Ball target after coerce: finalPos=($finalX,$finalY)")
                 TargetParams(ballSizeInPx, ballSizeInPx, finalX, finalY, flags)
                 }
-                FloatingMode.WINDOW, FloatingMode.READER -> {
+            FloatingMode.READER -> {
+                val flags =
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                val readerHeight =
+                    (state.windowHeight.value.value * density * state.windowScale.value).toInt()
+                state.windowScale.value = state.lastWindowScale
+                TargetParams(screenWidth, readerHeight, 0, 0, flags)
+            }
+            FloatingMode.WINDOW -> {
                 val flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
                 val width = (state.windowWidth.value.value * density * state.lastWindowScale).toInt()
