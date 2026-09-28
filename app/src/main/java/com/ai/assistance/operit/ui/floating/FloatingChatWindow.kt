@@ -31,6 +31,7 @@ import com.ai.assistance.operit.ui.floating.ui.ball.FloatingResultDisplay
 import com.ai.assistance.operit.ui.floating.ui.ball.FloatingVoiceBallMode
 import com.ai.assistance.operit.ui.floating.ui.fullscreen.FloatingFullscreenMode
 import com.ai.assistance.operit.ui.floating.ui.screenocr.FloatingScreenOcrMode
+import com.ai.assistance.operit.ui.floating.ui.reader.FloatingReaderMode
 import com.ai.assistance.operit.ui.floating.ui.window.screen.FloatingChatWindowMode
 import com.ai.assistance.operit.ui.theme.LocalThemePreferenceSnapshot
 import com.ai.assistance.operit.ui.theme.rememberActiveThemePreferenceSnapshot
@@ -214,6 +215,7 @@ fun FloatingChatWindow(
                     FloatingMode.FULLSCREEN -> FloatingFullscreenMode(floatContext = floatContext)
                     FloatingMode.RESULT_DISPLAY -> FloatingResultDisplay(floatContext = floatContext)
                     FloatingMode.SCREEN_OCR -> FloatingScreenOcrMode(floatContext = floatContext)
+                    FloatingMode.READER -> FloatingReaderMode(floatContext = floatContext)
                 }
             }
 
