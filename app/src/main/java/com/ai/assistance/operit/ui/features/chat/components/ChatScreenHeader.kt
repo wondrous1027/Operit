@@ -139,6 +139,8 @@ fun ChatScreenHeader(
 
     val launchFloatingWindow = useFloatingWindowLauncher(actualViewModel, permissionLauncher)
 
+    val launchReaderWindow: () -> Unit = { actualViewModel.launchReaderFloatingMode() }
+
     Row(
             modifier =
                     modifier
@@ -157,6 +159,7 @@ fun ChatScreenHeader(
                 modifier = Modifier.weight(1f),
                 isFloatingMode = isFloatingMode,
                 onLaunchFloatingWindow = launchFloatingWindow,
+                onLaunchReaderWindow = launchReaderWindow,
                 historyIconColor = chatHeaderHistoryIconColor,
                 pipIconColor = chatHeaderPipIconColor,
                 runningTaskCount = activeStreamingChatIds.size,
